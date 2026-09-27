@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Escreve+</string>
+    <string name="accessibility_service_description">Mostra um assistente flutuante para corrigir e melhorar o texto que você está digitando. O texto é lido somente quando você aciona o assistente.</string>
+</resources>
