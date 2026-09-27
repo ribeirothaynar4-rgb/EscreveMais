@@ -10,10 +10,12 @@ Página da versão: [Releases](https://github.com/ribeirothaynar4-rgb/EscreveMai
 
 No Android, o sistema pode pedir permissão para instalar apps desta fonte. Isso é normal para um APK fora da Play Store.
 
+Se aparecer **“O app não foi instalado”**, apague o arquivo antigo `EscreveMais.apk` da pasta Downloads e baixe de novo por este link.
+
 ## Como usar depois de instalar
 
 1. Crie uma chave da Gemini API em um projeto que permaneça no **Free Tier** e **sem faturamento pago**.
-2. Abra **Escreve+**.
+2. Abra **Escreve+** (ícone roxo com estrela).
 3. Cole a chave da Gemini API e salve.
 4. Toque em **Ativar assistente** e ligue **Escreve+ — Assistente de escrita** em Acessibilidade.
 5. Abra WhatsApp (ou outro app), toque no campo de mensagem e digite.
@@ -30,7 +32,3 @@ No Android, o sistema pode pedir permissão para instalar apps desta fonte. Isso
 - Em erro de cota (`429`) ou pedido de faturamento, o app **para**.
 
 O Escreve+ não ativa faturamento por conta própria. Use uma chave de um projeto Google que permaneça no Free Tier.
-
-## Compilar no GitHub Actions
-
-O workflow [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) gera o APK e publica em Releases a cada push na `main`.

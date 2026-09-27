@@ -21,24 +21,34 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android 35
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Install Android SDK packages
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          SM=""
+          for c in "$SDK/cmdline-tools/latest/bin/sdkmanager" "$SDK/cmdline-tools/bin/sdkmanager"; do
+            if [ -x "$c" ]; then SM="$c"; break; fi
+          done
+          if [ -z "$SM" ]; then
+            SM="$(find "$SDK/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          fi
+          yes | "$SM" --licenses >/dev/null || true
+          "$SM" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
 
-      - name: Build debug APK
+      - name: Build signed APK
         run: gradle :app:assembleDebug
 
       - name: Prepare APK
         run: |
           mkdir -p dist
           cp app/build/outputs/apk/debug/app-debug.apk dist/EscreveMais.apk
+          unzip -l dist/EscreveMais.apk | head -40
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -49,10 +59,10 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.0-free
-          name: Escreve+ 1.1.0 (modo gratuito)
+          tag_name: v1.1.1-free
+          name: Escreve+ 1.1.1 (modo gratuito)
           body: |
-            APK do **Escreve+** (modo gratuito protegido).
+            APK **assinado** do Escreve+ (modo gratuito protegido).
 
             - Toque em **EscreveMais.apk** para baixar.
             - No Android, permita instalar apps desta fonte se o sistema pedir.
