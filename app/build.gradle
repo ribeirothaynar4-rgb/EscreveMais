@@ -9,9 +9,9 @@ android {
     defaultConfig {
         applicationId 'com.roniel.escrevemais'
         minSdk 26
-        targetSdk 35
-        versionCode 3
-        versionName '1.1.1-free'
+        targetSdk 34
+        versionCode 4
+        versionName '1.1.2-free'
     }
 
     signingConfigs {
@@ -20,17 +20,24 @@ android {
             storePassword 'escrevemais123'
             keyAlias 'escrevemais'
             keyPassword 'escrevemais123'
+            enableV1Signing true
+            enableV2Signing true
+            enableV3Signing true
         }
     }
 
     buildTypes {
-        debug {
-            signingConfig signingConfigs.release
-        }
         release {
-            signingConfig signingConfigs.release
             minifyEnabled false
+            debuggable false
+            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
         }
     }
 
