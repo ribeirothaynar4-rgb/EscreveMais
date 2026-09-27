@@ -10,8 +10,8 @@ android {
         applicationId 'com.roniel.escrevemais'
         minSdk 26
         targetSdk 34
-        versionCode 4
-        versionName '1.1.2-free'
+        versionCode 5
+        versionName '1.2.0-free'
     }
 
     signingConfigs {

@@ -56,7 +56,7 @@ public class MainActivity extends Activity {
 
         TextView brand = text("Escreve+", 34, true);
         root.addView(brand);
-        TextView subtitle = text("Seu assistente pessoal de escrita, em qualquer aplicativo.", 16, false);
+        TextView subtitle = text("16 jeitos de melhorar, responder e traduzir suas mensagens.", 16, false);
         subtitle.setTextColor(Color.rgb(90, 85, 100));
         subtitle.setPadding(0, dp(6), 0, dp(24));
         root.addView(subtitle);
@@ -89,6 +89,35 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams serviceParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         serviceParams.topMargin = dp(16);
         root.addView(card, serviceParams);
+
+        LinearLayout modes = card();
+        TextView modesTitle = text("Novas opções na bolha ✦", 18, true);
+        modes.addView(modesTitle);
+        TextView modesText = text(
+                "Corrigir • Melhorar • Natural • Profissional • Curta\n" +
+                        "Educado • Firme • Desculpa • Responder • Traduzir\n" +
+                        "Resumir • Lista • Emojis • Sem emoji • 3 versões • Ideia\n\n" +
+                        "Responder usa a conversa visível na tela. Depois de Usar esta, aparece Desfazer. Recentes guarda as últimas sugestões.",
+                14, false);
+        modesText.setTextColor(Color.DKGRAY);
+        modesText.setPadding(0, dp(8), 0, 0);
+        modes.addView(modesText);
+        LinearLayout.LayoutParams modesParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        modesParams.topMargin = dp(16);
+        root.addView(modes, modesParams);
+
+        LinearLayout xiaomi = card();
+        TextView x1 = text("Xiaomi / HyperOS", 18, true);
+        xiaomi.addView(x1);
+        TextView x2 = text(
+                "Se Acessibilidade ficar bloqueada: Apps → Escreve+ → 3 pontinhos → Permitir configurações restritas. Depois ligue o assistente em Acessibilidade.",
+                14, false);
+        x2.setTextColor(Color.DKGRAY);
+        x2.setPadding(0, dp(8), 0, 0);
+        xiaomi.addView(x2);
+        LinearLayout.LayoutParams xiaomiParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        xiaomiParams.topMargin = dp(16);
+        root.addView(xiaomi, xiaomiParams);
 
         TextView aiTitle = text("Inteligência artificial", 20, true);
         aiTitle.setPadding(0, dp(26), 0, dp(10));

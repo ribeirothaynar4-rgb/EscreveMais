@@ -42,12 +42,12 @@ jobs:
           gradle-version: '8.10.2'
 
       - name: Build signed APK
-        run: gradle :app:assembleDebug
+        run: gradle :app:assembleRelease
 
       - name: Prepare APK
         run: |
           mkdir -p dist
-          cp app/build/outputs/apk/debug/app-debug.apk dist/EscreveMais.apk
+          cp app/build/outputs/apk/release/app-release.apk dist/EscreveMais.apk
           unzip -l dist/EscreveMais.apk | head -40
 
       - name: Upload APK artifact
@@ -59,14 +59,16 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.1-free
-          name: Escreve+ 1.1.1 (modo gratuito)
+          tag_name: v1.2.0-free
+          name: Escreve+ 1.2.0 (mais opções)
           body: |
-            APK **assinado** do Escreve+ (modo gratuito protegido).
+            APK **assinado** do Escreve+ 1.2.0.
 
+            Novidades: Educado, Firme, Desculpa, Responder, Traduzir, Resumir, Lista, Emojis, Sem emoji, 3 versões, Ideia, Recentes e Desfazer.
+
+            - Desinstale a versão antiga se o Android recusar atualizar.
             - Toque em **EscreveMais.apk** para baixar.
             - No Android, permita instalar apps desta fonte se o sistema pedir.
-            - Depois abra o app, cole sua chave gratuita da Gemini API e ative o assistente em Acessibilidade.
           files: dist/EscreveMais.apk
           draft: false
           make_latest: true
