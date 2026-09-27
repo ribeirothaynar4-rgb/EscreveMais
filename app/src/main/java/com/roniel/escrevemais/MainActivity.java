@@ -8,7 +8,10 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.provider.Settings;
 import android.text.InputType;
 import android.view.Gravity;
@@ -119,6 +122,22 @@ public class MainActivity extends Activity {
         xiaomiParams.topMargin = dp(16);
         root.addView(xiaomi, xiaomiParams);
 
+        LinearLayout battery = card();
+        TextView b1 = text("Xiaomi: deixar a IA funcionar", 18, true);
+        battery.addView(b1);
+        TextView b2 = text(
+                "Se a bolha demorar e falhar, o celular pode estar travando a internet do Escreve+. Toque no botão abaixo e permita ignorar a economia de bateria.",
+                14, false);
+        b2.setTextColor(Color.DKGRAY);
+        b2.setPadding(0, dp(8), 0, dp(14));
+        battery.addView(b2);
+        Button batteryBtn = button("Liberar internet em 2º plano");
+        batteryBtn.setOnClickListener(v -> openBatterySettings());
+        battery.addView(batteryBtn);
+        LinearLayout.LayoutParams batteryParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        batteryParams.topMargin = dp(16);
+        root.addView(battery, batteryParams);
+
         TextView aiTitle = text("Inteligência artificial", 20, true);
         aiTitle.setPadding(0, dp(26), 0, dp(10));
         root.addView(aiTitle);
@@ -188,6 +207,29 @@ public class MainActivity extends Activity {
         if (usage != null) {
             usage.setText("Uso local: " + GeminiClient.getTodayUsage(this) + "/" + GeminiClient.DAILY_REQUEST_LIMIT +
                     " hoje • " + GeminiClient.getMonthUsage(this) + "/" + GeminiClient.MONTHLY_REQUEST_LIMIT + " neste mês");
+        }
+    }
+
+    private void openBatterySettings() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+                Intent intent;
+                if (pm != null && !pm.isIgnoringBatteryOptimizations(getPackageName())) {
+                    intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                    intent.setData(Uri.parse("package:" + getPackageName()));
+                } else {
+                    intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                }
+                startActivity(intent);
+                return;
+            }
+        } catch (Exception ignored) {}
+        try {
+            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:" + getPackageName())));
+        } catch (Exception e) {
+            Toast.makeText(this, "Abra Configurações → Apps → Escreve+ → Economia de bateria → Sem restrições.", Toast.LENGTH_LONG).show();
         }
     }
 

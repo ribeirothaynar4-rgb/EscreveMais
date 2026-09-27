@@ -59,16 +59,17 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.2.0-free
-          name: Escreve+ 1.2.0 (mais opções)
+          tag_name: v1.2.1-free
+          name: Escreve+ 1.2.1 (IA mais rápida)
           body: |
-            APK **assinado** do Escreve+ 1.2.0.
+            Correção: a IA demorava e falhava no Xiaomi.
 
-            Novidades: Educado, Firme, Desculpa, Responder, Traduzir, Resumir, Lista, Emojis, Sem emoji, 3 versões, Ideia, Recentes e Desfazer.
+            - Resposta mais rápida (sem o modo "pensar" da Gemini)
+            - Só envia a conversa da tela em Responder / Desculpa / Ideia
+            - Mostra o erro real se falhar
+            - Tenta de novo sozinho se a rede oscilar
 
-            - Desinstale a versão antiga se o Android recusar atualizar.
-            - Toque em **EscreveMais.apk** para baixar.
-            - No Android, permita instalar apps desta fonte se o sistema pedir.
+            Desinstale a versão antiga e instale este APK.
           files: dist/EscreveMais.apk
           draft: false
           make_latest: true

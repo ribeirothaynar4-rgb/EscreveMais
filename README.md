@@ -8,7 +8,7 @@ Assistente pessoal de escrita para Android. Mostra uma bolha flutuante por cima 
 
 Página da versão: [Releases](https://github.com/ribeirothaynar4-rgb/EscreveMais/releases/latest)
 
-Versão atual: **1.2.0**. Desinstale a versão antiga antes, se o Android recusar a atualização.
+Versão atual: **1.2.1**. Desinstale a versão antiga antes, se o Android recusar a atualização.
 
 No Android, o sistema pode pedir permissão para instalar apps desta fonte. Isso é normal para um APK fora da Play Store.
 

@@ -11,7 +11,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -32,6 +34,10 @@ public final class GeminiClient {
      * e NÃO tenha faturamento pago ativado.
      */
     public static final String FIXED_MODEL = "gemini-3.5-flash-lite";
+    private static final String[] FREE_MODELS = {
+            "gemini-3.5-flash-lite",
+            "gemini-2.5-flash-lite"
+    };
     public static final int DAILY_REQUEST_LIMIT = 50;
     public static final int MONTHLY_REQUEST_LIMIT = 500;
     public static final int MAX_INPUT_CHARS = 4000;
@@ -90,75 +96,163 @@ public final class GeminiClient {
             return;
         }
 
-        registerRequest(sp);
         final String input = text;
         final String contextText = ctx;
         final float temperature = temperatureFor(mode);
+        final String instruction = buildInstruction(mode, userStyle, input, contextText);
 
         new Thread(() -> {
-            HttpURLConnection conn = null;
             try {
-                String endpoint = "https://generativelanguage.googleapis.com/v1beta/models/" +
-                        FIXED_MODEL + ":generateContent?key=" + key;
-                conn = (HttpURLConnection) new URL(endpoint).openConnection();
-                conn.setRequestMethod("POST");
-                conn.setConnectTimeout(15000);
-                conn.setReadTimeout(30000);
-                conn.setDoOutput(true);
-                conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-
-                String instruction = buildInstruction(mode, userStyle, input, contextText);
-                JSONObject body = new JSONObject();
-                JSONArray contents = new JSONArray();
-                JSONObject content = new JSONObject();
-                JSONArray parts = new JSONArray();
-                parts.put(new JSONObject().put("text", instruction));
-                content.put("parts", parts);
-                contents.put(content);
-                body.put("contents", contents);
-                body.put("generationConfig", new JSONObject()
-                        .put("temperature", temperature)
-                        .put("maxOutputTokens", MAX_OUTPUT_TOKENS));
-
-                byte[] bytes = body.toString().getBytes(StandardCharsets.UTF_8);
-                try (OutputStream os = conn.getOutputStream()) {
-                    os.write(bytes);
-                }
-
-                int code = conn.getResponseCode();
-                InputStream stream = code >= 200 && code < 300 ? conn.getInputStream() : conn.getErrorStream();
-                String response = readAll(stream);
-                if (code < 200 || code >= 300) {
-                    callback.onError(friendlyApiError(code, response));
+                CallResult result = requestWithFallback(key, instruction, temperature);
+                if (!result.ok) {
+                    callback.onError(result.error);
                     return;
                 }
-
-                JSONObject json = new JSONObject(response);
-                JSONArray candidates = json.optJSONArray("candidates");
-                if (candidates == null || candidates.length() == 0) {
-                    callback.onError("A IA não retornou uma sugestão.");
+                if (result.text.isEmpty()) {
+                    callback.onError("A IA retornou uma resposta vazia. Toque de novo na opção.");
                     return;
                 }
-                JSONObject c0 = candidates.getJSONObject(0).getJSONObject("content");
-                JSONArray outParts = c0.getJSONArray("parts");
-                String result = outParts.getJSONObject(0).optString("text", "").trim();
-                if (result.isEmpty()) {
-                    callback.onError("A IA retornou uma resposta vazia.");
-                } else {
-                    String cleaned = clean(result);
-                    saveHistory(sp, mode, input, cleaned);
-                    callback.onSuccess(cleaned);
-                }
+                registerRequest(sp);
+                saveHistory(sp, mode, input, result.text);
+                callback.onSuccess(result.text);
+            } catch (SocketTimeoutException e) {
+                callback.onError("A IA demorou demais. Toque de novo na opção.");
+            } catch (UnknownHostException e) {
+                callback.onError("Sem internet. Confira o Wi‑Fi ou os dados móveis e tente de novo.");
             } catch (Exception e) {
-                callback.onError("Não foi possível conectar à IA. Verifique sua internet e tente novamente.");
-            } finally {
-                if (conn != null) conn.disconnect();
+                String msg = e.getMessage();
+                callback.onError("Falha ao falar com a IA" + (msg == null || msg.isEmpty() ? "." : ": " + shortError(msg)));
             }
         }).start();
     }
 
     public static boolean allowsEmptyInput(String mode) {
         return "Responder".equals(mode) || "Desculpa".equals(mode) || "Ideia".equals(mode);
+    }
+
+    public static boolean usesScreenContext(String mode) {
+        return "Responder".equals(mode) || "Desculpa".equals(mode) || "Ideia".equals(mode);
+    }
+
+    private static final class CallResult {
+        final boolean ok;
+        final String text;
+        final String error;
+        CallResult(boolean ok, String text, String error) {
+            this.ok = ok;
+            this.text = text;
+            this.error = error;
+        }
+    }
+
+    private static CallResult requestWithFallback(String key, String instruction, float temperature) throws Exception {
+        Exception lastNetwork = null;
+        String lastHttpError = null;
+        for (String model : FREE_MODELS) {
+            for (int attempt = 0; attempt < 2; attempt++) {
+                try {
+                    CallResult r = postOnce(key, model, instruction, temperature, true);
+                    if (r.ok) return r;
+                    lastHttpError = r.error;
+                    String lower = r.error == null ? "" : r.error.toLowerCase();
+                    if (lower.contains("429") || lower.contains("cota") || lower.contains("faturamento") || lower.contains("chave")) {
+                        return r;
+                    }
+                    if (lower.contains("thinking") || lower.contains("generationconfig")) {
+                        CallResult r2 = postOnce(key, model, instruction, temperature, false);
+                        if (r2.ok) return r2;
+                        lastHttpError = r2.error;
+                    }
+                    if (!lower.contains("404") && !lower.contains("not found") && !lower.contains("not supported")) {
+                        return r;
+                    }
+                    break;
+                } catch (SocketTimeoutException | UnknownHostException e) {
+                    lastNetwork = e;
+                    if (attempt == 0) {
+                        try { Thread.sleep(600); } catch (InterruptedException ignored) {}
+                        continue;
+                    }
+                    throw e;
+                }
+            }
+        }
+        if (lastNetwork != null) throw lastNetwork;
+        return new CallResult(false, "", lastHttpError == null ? "A IA não retornou uma sugestão." : lastHttpError);
+    }
+
+    private static CallResult postOnce(String key, String model, String instruction, float temperature, boolean disableThinking) throws Exception {
+        String endpoint = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent";
+        HttpURLConnection conn = (HttpURLConnection) new URL(endpoint).openConnection();
+        try {
+            conn.setRequestMethod("POST");
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(20000);
+            conn.setDoOutput(true);
+            conn.setUseCaches(false);
+            conn.setInstanceFollowRedirects(true);
+            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+            conn.setRequestProperty("x-goog-api-key", key);
+            conn.setRequestProperty("User-Agent", "EscreveMais/1.2.1");
+
+            JSONObject gen = new JSONObject()
+                    .put("temperature", temperature)
+                    .put("maxOutputTokens", MAX_OUTPUT_TOKENS);
+            if (disableThinking) {
+                gen.put("thinkingConfig", new JSONObject().put("thinkingBudget", 0));
+            }
+            JSONObject body = new JSONObject();
+            JSONArray contents = new JSONArray();
+            JSONObject content = new JSONObject();
+            JSONArray parts = new JSONArray();
+            parts.put(new JSONObject().put("text", instruction));
+            content.put("parts", parts);
+            contents.put(content);
+            body.put("contents", contents);
+            body.put("generationConfig", gen);
+
+            byte[] bytes = body.toString().getBytes(StandardCharsets.UTF_8);
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(bytes);
+            }
+
+            int code = conn.getResponseCode();
+            InputStream stream = code >= 200 && code < 300 ? conn.getInputStream() : conn.getErrorStream();
+            String response = readAll(stream);
+            if (code < 200 || code >= 300) {
+                return new CallResult(false, "", friendlyApiError(code, response));
+            }
+            String text = extractText(response);
+            return new CallResult(true, clean(text), null);
+        } finally {
+            conn.disconnect();
+        }
+    }
+
+    private static String extractText(String response) throws Exception {
+        JSONObject json = new JSONObject(response);
+        JSONArray candidates = json.optJSONArray("candidates");
+        if (candidates == null || candidates.length() == 0) return "";
+        JSONObject content = candidates.getJSONObject(0).optJSONObject("content");
+        if (content == null) return "";
+        JSONArray parts = content.optJSONArray("parts");
+        if (parts == null) return "";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < parts.length(); i++) {
+            JSONObject p = parts.getJSONObject(i);
+            if (p.optBoolean("thought", false)) continue;
+            String t = p.optString("text", "").trim();
+            if (!t.isEmpty()) {
+                if (sb.length() > 0) sb.append('\n');
+                sb.append(t);
+            }
+        }
+        return sb.toString().trim();
+    }
+
+    private static String shortError(String msg) {
+        msg = msg.replace('\n', ' ').trim();
+        return msg.length() > 140 ? msg.substring(0, 140) + "…" : msg;
     }
 
     public static int getTodayUsage(Context context) {

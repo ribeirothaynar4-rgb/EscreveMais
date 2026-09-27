@@ -279,14 +279,15 @@ public class WritingAssistantService extends AccessibilityService {
 
     private void generate(String mode) {
         if (progress != null) progress.setVisibility(View.VISIBLE);
-        suggestionText.setText("Preparando…");
+        suggestionText.setText("Falando com a IA…");
         versionsRow.setVisibility(View.GONE);
         versionsRow.removeAllViews();
         useButton.setEnabled(false);
         copyButton.setEnabled(false);
         currentSuggestion = "";
 
-        GeminiClient.rewrite(this, currentOriginal, mode, screenContext, new GeminiClient.Callback() {
+        String ctx = GeminiClient.usesScreenContext(mode) ? screenContext : "";
+        GeminiClient.rewrite(this, currentOriginal, mode, ctx, new GeminiClient.Callback() {
             @Override
             public void onSuccess(String text) {
                 main.post(() -> {
